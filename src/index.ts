@@ -7,9 +7,9 @@
  * Executes a simple end-to-end pipeline using the selected profile.
  */
 
-import { loadProfile } from "./config/profileLoader.js";
+import { loadProfile } from "./config/profileLoader.backup.js";
 import { normalizeInput } from "./pipeline/normalizeInput.js";
-import { analyzeDomain } from "./pipeline/analyzeDomain.js";
+import { analyzeAi } from "./pipeline/analyzeAi.js";
 import { synthesizeOutput } from "./pipeline/synthesizeOutput.js";
 
 export async function runOrchestration(input: string, profileId: string) {
@@ -23,7 +23,7 @@ export async function runOrchestration(input: string, profileId: string) {
   const normalized = await normalizeInput(input);
 
   // 3. Run analysis
-  const analysis = await analyzeDomain(normalized, profile);
+  const analysis = await analyzeAi(normalized, profile);
 
   // 4. Synthesize final output
   const result = await synthesizeOutput(analysis, profile);
