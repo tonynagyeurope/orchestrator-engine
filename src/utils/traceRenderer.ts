@@ -16,7 +16,9 @@ export function renderTrace(trace: TraceStep[]): void {
 
   trace.forEach((step) => {
     const index = kleur.yellow(`#${step.index.toString().padStart(2, "0")}`);
-    const time = kleur.gray(`[${new Date(step.timestamp).toLocaleTimeString()}]`);
+    // Use fixed, locale-independent HH:MM:SS format for deterministic tests
+    const isoTime = new Date(step.timestamp).toISOString().split("T")[1].split(".")[0];
+    const time = kleur.gray(`[${isoTime}]`);
     const text = kleur.white(step.text);
 
     console.log(`${index} ${time} ${text}`);
