@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
+    "rebuild": "rm -rf dist tsconfig.tsbuildinfo && tsc",
     "start": "node dist/index.js",
     "test": "vitest run",
     "clean": "rm -rf dist",
