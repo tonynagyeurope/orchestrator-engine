@@ -1,6 +1,7 @@
 // src/pipeline/synthesizeOutput.ts
 
 import { OrchestratorProfile } from "../config/baseConfig.js";
+import { formatTrace, TraceStep } from "../utils/traceFormatter.js";
 
 /**
  * Step 3 - Synthesize Output
@@ -13,12 +14,16 @@ export async function synthesizeOutput(
   profile: string;
   summary: string;
   steps: string[];
+  trace: TraceStep[];
   meta?: Record<string, unknown>;
 }> {
+  const trace = formatTrace(analysis.steps, analysis.meta);
+
   return {
     profile: profile.displayName,
     summary: analysis.summary,
     steps: analysis.steps,
+    trace, 
     meta: analysis.meta
   };
 }
