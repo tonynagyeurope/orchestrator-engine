@@ -1,16 +1,14 @@
-// src/index.ts
+import { loadProfile } from "./config/profileLoader.js";
+import { normalizeInput } from "./pipeline/normalizeInput.js";
+import { analyzeAi } from "./pipeline/analyzeAi.js";
+import { synthesizeOutput } from "./pipeline/synthesizeOutput.js";
 
 /**
  * Orchestrator Engine (OE)
  * ------------------------
  * Entry point of the orchestration core.
- * Executes a simple end-to-end pipeline using the selected profile.
+ * Executes a full AI-based orchestration pipeline.
  */
-
-import { loadProfile } from "./config/profileLoader.js";
-import { normalizeInput } from "./pipeline/normalizeInput.js";
-import { analyzeDomain } from "./pipeline/analyzeDomain.js";
-import { synthesizeOutput } from "./pipeline/synthesizeOutput.js";
 
 export async function runOrchestration(input: string, profileId: string) {
   console.log(`[OE] Starting orchestration for profile: ${profileId}`);
@@ -22,8 +20,8 @@ export async function runOrchestration(input: string, profileId: string) {
   // 2. Normalize input
   const normalized = await normalizeInput(input);
 
-  // 3. Run analysis
-  const analysis = await analyzeDomain(normalized, profile);
+  // 3. Run AI analysis
+  const analysis = await analyzeAi(normalized, profile);
 
   // 4. Synthesize final output
   const result = await synthesizeOutput(analysis, profile);

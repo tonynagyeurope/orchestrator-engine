@@ -7,12 +7,18 @@ import { OrchestratorProfile } from "../config/baseConfig.js";
  * Generates a structured JSON output for downstream visualization or storage.
  */
 export async function synthesizeOutput(
-  analysis: { insights: string[] },
+  analysis: { summary: string; steps: string[]; meta?: Record<string, unknown> },
   profile: OrchestratorProfile
-): Promise<{ profile: string; summary: string; details: string[] }> {
+): Promise<{
+  profile: string;
+  summary: string;
+  steps: string[];
+  meta?: Record<string, unknown>;
+}> {
   return {
     profile: profile.displayName,
-    summary: `Generated output for ${profile.id}.`,
-    details: analysis.insights,
+    summary: analysis.summary,
+    steps: analysis.steps,
+    meta: analysis.meta
   };
 }
