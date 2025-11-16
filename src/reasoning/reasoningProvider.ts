@@ -18,6 +18,12 @@ export interface ReasoningProvider {
  */
 export async function getReasoningProvider(): Promise<ReasoningProvider> {
   const mode = process.env.OE_REASONING_MODE || "mock";
+
+  if (mode === "openai") {
+    const { openaiReasoningProvider } = await import("./openaiReasoningProvider.js");
+    return openaiReasoningProvider;
+  }
+
   if (mode === "mock") {
     const { mockReasoningProvider } = await import("./mockReasoningProvider.js");
     return mockReasoningProvider;
