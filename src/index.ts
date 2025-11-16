@@ -2,6 +2,8 @@ import { loadProfile } from "./config/profileLoader.js";
 import { normalizeInput } from "./pipeline/normalizeInput.js";
 import { analyzeAi } from "./pipeline/analyzeAi.js";
 import { synthesizeOutput } from "./pipeline/synthesizeOutput.js";
+import { renderTrace } from "./utils/traceRenderer.js";
+import kleur from "kleur";
 
 /**
  * Orchestrator Engine (OE)
@@ -26,7 +28,10 @@ export async function runOrchestration(input: string, profileId: string) {
   // 4. Synthesize final output
   const result = await synthesizeOutput(analysis, profile);
 
-  console.log(`[OE] Orchestration completed.`);
+  // CLI trace visualization
+  renderTrace(result.trace);
+
+  console.log(kleur.green(`[OE] Orchestration completed for "${profile.displayName}".`));
   return result;
 }
 
