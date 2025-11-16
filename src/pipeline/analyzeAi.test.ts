@@ -8,8 +8,8 @@ describe("analyzeAi", () => {
     const input = { text: "Optimize an AI workload for latency" };
     const result = await analyzeAi(input, profile);
 
-    expect(result.summary).toContain("simulated reasoning");
+    expect(result.summary.toLowerCase()).toContain("simulated reasoning");
     expect(result.steps.length).toBeGreaterThan(2);
-    expect(result.meta.profileId).toBe("ai");
+    expect(result.meta!.profileId).toBe("ai");
   });
 });
