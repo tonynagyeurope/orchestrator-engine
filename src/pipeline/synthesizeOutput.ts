@@ -13,6 +13,6 @@ export async function synthesizeOutput(
   return {
     profile: profile.displayName,
     summary: `Generated output for ${profile.id}.`,
-    details: analysis.insights
+    details: analysis.insights,
   };
 }

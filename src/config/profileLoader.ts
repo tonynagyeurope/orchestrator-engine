@@ -13,6 +13,10 @@ import { OrchestratorProfile, defaultProfiles } from "./baseConfig.js";
 
 const cache = new Map<string, OrchestratorProfile>();
 
+export function __clearProfileCache() {
+  cache.clear();
+}
+
 function mergeProfiles(
   base: OrchestratorProfile,
   overlay: Partial<OrchestratorProfile>

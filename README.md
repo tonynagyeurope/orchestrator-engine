@@ -20,6 +20,7 @@ Built with TypeScript, AWS-ready architecture, and a config-as-control philosoph
 ## Quick Start
 
 ### 1. Clone the repository
+
 ```bash
 git clone https://github.com/yourusername/orchestrator-engine.git
 cd orchestrator-engine
@@ -27,11 +28,13 @@ npm install
 ```
 
 ### 2. Run locally
+
 ```bash
 npm run dev
 ```
 
 ### 3. Build and start
+
 ```bash
 npm run build
 npm start
@@ -52,6 +55,7 @@ npm start
 OE is built on the idea of config-as-control — everything about the orchestration process (AI reasoning, domain focus, prompts, UI labels) is controlled through configuration, not hard-coded logic.
 
 This allows:
+
 - Reusable orchestration across any domain
 - Private configurations for confidential projects
 - Public OSS configurations for open demos
