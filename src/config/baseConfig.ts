@@ -1,12 +1,21 @@
 // src/config/baseConfig.ts
 
+export interface TraceConfig {
+  enabled: boolean;
+  verbose?: boolean;
+  timestamps?: boolean;
+  colors?: boolean;
+  compact?: boolean;      // one-line compact mode for high-volume traces
+}
+
 export interface OrchestratorProfile {
   id: string;
   displayName: string;
   domainFocus: string;
   systemPrompt: string;
   exampleUseCases?: string[];
-  uiLabels: Record<string, string>; // now required
+  uiLabels: Record<string, string>;
+  trace?: TraceConfig;
 }
 
 export const defaultProfiles: Record<string, OrchestratorProfile> = {
@@ -25,7 +34,8 @@ export const defaultProfiles: Record<string, OrchestratorProfile> = {
       stopButton: "Stop",
       inputPlaceholder: "Enter a description or task...",
       resultHeader: "Orchestration Result"
-    }
+    },
+    trace: { enabled: true, verbose: true, timestamps: true, colors: true }
   },
 
   cloud: {
@@ -39,6 +49,7 @@ export const defaultProfiles: Record<string, OrchestratorProfile> = {
       stopButton: "Stop",
       inputPlaceholder: "Enter workload or service name...",
       resultHeader: "Optimization Summary"
-    }
+    },
+    trace: { enabled: true, verbose: true, timestamps: true, colors: true }
   }
 };

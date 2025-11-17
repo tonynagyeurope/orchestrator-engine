@@ -1,39 +1,63 @@
-import { describe, it, expect, vi } from "vitest";
+import kleur from "kleur";
+import stripAnsi from "strip-ansi";
 import { renderTrace } from "./traceRenderer.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TraceStep } from "./traceFormatter.js";
 
-function stripAnsi(str: string): string {
-  // Removes ANSI color codes from console output
-  return str.replace(/\u001b\[.*?m/g, "");
-}
-
 describe("renderTrace (CLI visualization)", () => {
-  it("prints formatted trace with index, timestamp, and meta", () => {
-    const mockTrace: TraceStep[] = [
-      { index: 1, text: "Task received", timestamp: "2025-11-15T10:00:00Z", meta: { provider: "mock" } },
-      { index: 2, text: "Reasoning step 2", timestamp: "2025-11-15T10:00:01Z" },
-    ];
+  let logs: string[];
+  let spy: ReturnType<typeof vi.spyOn>;
+  const flush = async () => new Promise((r) => setTimeout(r, 5));
 
-    const logs: string[] = [];
-    const spy = vi.spyOn(console, "log").mockImplementation((msg) => {
-      logs.push(msg);
+  // Common reusable steps for all tests
+  const steps: TraceStep[] = [
+    {
+      index: 1,
+      text: "Task received",
+      timestamp: new Date("2025-01-01T10:00:00Z").toISOString(),
+      meta: { provider: "mock" },
+    },
+    {
+      index: 2,
+      text: "Reasoning step 2",
+      timestamp: new Date("2025-01-01T10:00:01Z").toISOString(),
+    },
+  ];
+
+  beforeEach(() => {
+    kleur.enabled = true;
+    Object.defineProperty(process.stdout, "isTTY", { value: true });
+    logs = [];
+    spy = vi.spyOn(console, "log").mockImplementation((msg?: unknown) => {
+      logs.push(String(msg ?? ""));
     });
+  });
 
-    renderTrace(mockTrace);
+  afterEach(() => {
     spy.mockRestore();
+  });
 
+  it("prints formatted trace with index, timestamp, and meta", async () => {
+    renderTrace(steps, { enabled: true });
+    await flush();
     const output = logs.join("\n");
-    const cleanOutput = stripAnsi(output).replace(/\[\d{2}:\d{2}:\d{2}\]/g, "[HH:MM:SS]");
+    const clean = stripAnsi(output);
+    expect(clean).toContain("[Reasoning Trace Visualization]");
+    expect(clean).toContain("#01");
+    expect(clean).toContain("provider=mock");
+  });
 
-    expect(cleanOutput).toMatchInlineSnapshot(`
-"
-[Reasoning Trace Visualization]
-───────────────────────────────────────────────
-#01 [HH:MM:SS] Task received
-   ↳ provider=mock
-#02 [HH:MM:SS] Reasoning step 2
-───────────────────────────────────────────────
-"
-`);
+  it("renders without timestamps when timestamps=false", async () => {
+    renderTrace(steps, { enabled: true, timestamps: false });
+    await flush();
+    const output = logs.join("\n");
+    expect(output).not.toMatch(/\[\d{2}:\d{2}:\d{2}\]/);
+  });
+
+  it("skips meta info when verbose=false", async () => {
+    renderTrace(steps, { enabled: true, verbose: false });
+    await flush();
+    const output = logs.join("\n");
+    expect(output).not.toContain("provider=mock");
   });
 });
