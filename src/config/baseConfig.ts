@@ -5,6 +5,7 @@ export interface TraceConfig {
   verbose?: boolean;
   timestamps?: boolean;
   colors?: boolean;
+  compact?: boolean;      // one-line compact mode for high-volume traces
 }
 
 export interface OrchestratorProfile {
