@@ -7,6 +7,7 @@ import { OrchestratorProfile } from "../config/baseConfig.js";
  * otherwise falls back to a local simulated reasoning.
  */
 export const openaiReasoningProvider: ReasoningProvider = {
+  id: "openai",
   async analyze(input: string, profile: OrchestratorProfile): Promise<ReasoningResult> {
     const apiKey = process.env.OPENAI_API_KEY;
 

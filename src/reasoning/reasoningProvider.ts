@@ -9,6 +9,7 @@ export interface ReasoningResult {
 }
 
 export interface ReasoningProvider {
+  id: string;
   analyze: (input: string, profile: OrchestratorProfile) => Promise<ReasoningResult>;
 }
 
