@@ -8,6 +8,7 @@ import { OrchestratorProfile } from "../config/baseConfig.js";
  * Useful for testing and offline development.
  */
 export const mockReasoningProvider: ReasoningProvider = {
+  id: "mock",
   async analyze(input: string, profile: OrchestratorProfile): Promise<ReasoningResult> {
     const steps = [
       `Task received: "${input}"`,
