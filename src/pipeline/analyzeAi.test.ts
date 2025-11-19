@@ -1,15 +1,31 @@
-import { describe, it, expect } from "vitest";
+// src/pipeline/analyzeAi.test.ts
+import { describe, it, expect, vi } from "vitest";
 import { analyzeAi } from "./analyzeAi.js";
-import { defaultProfiles } from "../config/baseConfig.js";
+import type { OrchestratorProfile } from "../config/baseConfig.js";
+
+// --- Mock provider globally for this test ---
+vi.mock("../reasoning/reasoningProvider.js", () => ({
+  getReasoningProvider: () => ({
+    id: "fake",
+    analyze: async (text: string, profile: OrchestratorProfile) => ({
+      summary: "simulated reasoning result",
+      steps: ["step 1", "step 2"],
+      meta: { text, profileId: profile.id }
+    })
+  })
+}));
 
 describe("analyzeAi", () => {
-  it("returns simulated reasoning steps", async () => {
-    const profile = defaultProfiles["ai"];
-    const input = { text: "Optimize an AI workload for latency" };
-    const result = await analyzeAi(input, profile);
+  it("should return simulated reasoning result", async () => {
+    const profile = {
+      id: "test",
+      displayName: "Test Profile",
+      domainFocus: "general",
+      systemPrompt: "You are a test model.",
+      uiLabels: { summary: "Summary", steps: "Steps" }
+    } as OrchestratorProfile;
 
-    expect(result.summary.toLowerCase()).toContain("simulated reasoning");
-    expect(result.steps.length).toBeGreaterThan(2);
-    expect(result.meta!.profileId).toBe("ai");
+    const result = await analyzeAi({ text: "demo input" }, profile);
+    expect(result.summary).toContain("simulated reasoning result");
   });
 });

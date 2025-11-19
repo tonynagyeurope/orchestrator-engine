@@ -1,6 +1,7 @@
 // src/mcp/mcpServer.ts
 import { createInterface } from "readline"; // <- This is the streaming from the stdio
 import { handleRpcRequest } from "./rpcHandler.js";
+import "dotenv/config";
 
 /**
  * Entry point for the MCP stdio server.

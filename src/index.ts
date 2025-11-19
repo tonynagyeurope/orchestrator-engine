@@ -6,6 +6,7 @@ import { renderTrace } from "./utils/traceRenderer.js";
 import kleur from "kleur";
 import { getDefaultProvider } from "./reasoning/providerDiscovery.js";
 import { defaultProfiles } from "./config/baseConfig.js";
+import { ReasoningResult } from "./reasoning/types.js";
 
 /**
  * Orchestrator Engine (OE)
@@ -35,7 +36,7 @@ export async function runOrchestration(input: string, profileId: string) {
   const normalized = await normalizeInput(input);
 
   // 3. Run AI analysis
-  const analysis = await analyzeAi(normalized, profile);
+  const analysis = (await analyzeAi(normalized, profile)) as ReasoningResult;
 
   // 4. Synthesize final output
   const result = await synthesizeOutput(analysis, profile);
