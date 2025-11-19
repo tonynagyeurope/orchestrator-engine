@@ -23,6 +23,7 @@ Built with **TypeScript**, **AWS-ready architecture**, and a **config-as-control
 - **AWS Lambda compatible, standalone ready**
 - **ESM-native (NodeNext) build system**
 - **Frontend-ready output (Next.js SSG compatible)**
+- **MCP stdio server for external tool integration**
 
 ---
 
@@ -53,12 +54,46 @@ npm run demo
 
 ---
 
-## CLI Reasoning Trace Example
+## MCP Stdio Server
 
-Below is a **real output** from the Orchestrator Engine’s reasoning trace renderer.  
-It shows how reasoning steps are visualized directly in the terminal.
+The **MCP stdio server** lets OE act as a lightweight backend for clients such as  
+Claude Desktop, MCP Inspector, or any JSON-RPC 2.0-compatible interface.
 
-![CLI Reasoning Trace Example](./docs/images/trace-example.png)
+It exposes all built-in OE tools (`fetchUrl`, `awsListObjects`, `awsGetObject`) through standard MCP calls.
+
+### Start the MCP server
+```bash
+npm run build
+node dist/mcp/stdioServer.js
+```
+
+### Example requests
+
+#### Initialize
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}' | node dist/mcp/stdioServer.js
+```
+
+#### List available tools
+```bash
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | node dist/mcp/stdioServer.js
+```
+
+#### Call a tool
+```bash
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"fetchUrl","arguments":{"url":"https://example.com"}}}' | node dist/mcp/stdioServer.js
+```
+
+Responses are valid JSON-RPC 2.0 objects printed to **stdout**.  
+Structured MCP events (`mcp.event`, `mcp.result`, `mcp.error`) are logged to **stderr**.
+
+### Default capabilities
+
+| Setting | Description | Default |
+|----------|--------------|----------|
+| `cliOnly` | Allows only read-safe tools | `true` |
+| `awsApi` | Enables AWS read-only operations | `true` |
+| `requiresHumanApproval` | Indicates human oversight required | `true` |
 
 ---
 
@@ -69,6 +104,8 @@ It shows how reasoning steps are visualized directly in the terminal.
   /config       → configuration and profile management
   /pipeline     → normalization, analysis, synthesis
   /reasoning    → reasoning providers (OpenAI, mock)
+  /mcp          → MCP call handler and stdio server
+  /tools        → built-in tools (fetchUrl, awsListObjects, awsGetObject)
   /utils        → logging, formatting, rendering
   index.ts      → core orchestration entry point
 ```

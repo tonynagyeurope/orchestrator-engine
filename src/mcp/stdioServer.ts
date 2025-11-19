@@ -200,7 +200,6 @@ export async function handleJsonRpcMessage(
     const tools: ToolsListResult["tools"] = toolNames.map((name) => {
       // This relies on the registry having a `get` method.
       // It is already used from `execute`, so it is safe to rely on it here.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tool = (registry as any).get(name) as {
         name: string;
         description: string;
