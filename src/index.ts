@@ -4,6 +4,8 @@ import { analyzeAi } from "./pipeline/analyzeAi.js";
 import { synthesizeOutput } from "./pipeline/synthesizeOutput.js";
 import { renderTrace } from "./utils/traceRenderer.js";
 import kleur from "kleur";
+import { getDefaultProvider } from "./reasoning/providerDiscovery.js";
+import { defaultProfiles } from "./config/baseConfig.js";
 
 /**
  * Orchestrator Engine (OE)
@@ -11,6 +13,16 @@ import kleur from "kleur";
  * Entry point of the orchestration core.
  * Executes a full AI-based orchestration pipeline.
  */
+
+const provider = getDefaultProvider();
+const profile = defaultProfiles["ai"];
+console.log(`[OE] Selected provider: ${provider.id}`);
+
+const result = await provider.analyze(
+  "Summarize the key benefits of AWS Bedrock.",
+  profile
+);
+console.log(result);
 
 export async function runOrchestration(input: string, profileId: string) {
   console.log(`[OE] Starting orchestration for profile: ${profileId}`);
