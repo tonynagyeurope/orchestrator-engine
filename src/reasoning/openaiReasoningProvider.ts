@@ -1,4 +1,4 @@
-import { ReasoningProvider, ReasoningResult } from "./reasoningProvider.js";
+import { ReasoningProvider, ReasoningResult } from "./types.js";
 import { OrchestratorProfile } from "../config/baseConfig.js";
 
 /**

@@ -1,7 +1,6 @@
 // src/reasoning/types.ts
 
 import { OrchestratorProfile } from "../config/baseConfig.js";
-import { ReasoningResult } from "./reasoningProvider.js";
 
 export interface ReasoningProvider {
   id: string;
@@ -10,4 +9,10 @@ export interface ReasoningProvider {
     profile: string | OrchestratorProfile,
     options?: Record<string, unknown>
   ): Promise<ReasoningResult>;
+}
+
+export interface ReasoningResult {
+  summary: string;
+  steps: string[];
+  meta?: Record<string, unknown>;
 }

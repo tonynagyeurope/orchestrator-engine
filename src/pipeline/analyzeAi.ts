@@ -2,13 +2,27 @@
 
 import { OrchestratorProfile } from "../config/baseConfig.js";
 import { getReasoningProvider } from "../reasoning/reasoningProvider.js";
+import { vi } from "vitest";
+
+// Mock reasoning provider for analyzeAi tests
+vi.mock("../reasoning/reasoningProvider.js", () => ({
+  getReasoningProvider: () => ({
+    id: "fake",
+    analyze: async () => ({
+      summary: "simulated reasoning result",
+      steps: ["step 1", "step 2", "step 3"],
+      meta: { profileId: "ai" }
+    })
+  })
+}));
+
 
 /**
  * analyzeAi.ts
  * ------------
  * AI-based analysis pipeline stub.
  * Simulates a reasoning engine using mock prompts and profile data.
- * Later, this can be connected to a real LLM API (OpenAI, Anthropic, Bedrock, etc.).
+ * Later, this can be connected to a real LLM API (OpenAI, Bedrock, etc.).
  */
 
 /**
