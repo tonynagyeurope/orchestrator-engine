@@ -28,3 +28,8 @@ export function formatTrace(
     meta
   }));
 }
+
+export function formatTraceLog(entry: Record<string, unknown>): string {
+  return `[TRACE] ${JSON.stringify(entry)}\n`;
+}
+

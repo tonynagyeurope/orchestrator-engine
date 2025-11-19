@@ -1,39 +1,23 @@
 // src/pipeline/analyzeAi.ts
-
-import { OrchestratorProfile } from "../config/baseConfig.js";
+import type { OrchestratorProfile } from "../config/baseConfig.js";
 import { getReasoningProvider } from "../reasoning/reasoningProvider.js";
-import { vi } from "vitest";
-
-// Mock reasoning provider for analyzeAi tests
-vi.mock("../reasoning/reasoningProvider.js", () => ({
-  getReasoningProvider: () => ({
-    id: "fake",
-    analyze: async () => ({
-      summary: "simulated reasoning result",
-      steps: ["step 1", "step 2", "step 3"],
-      meta: { profileId: "ai" }
-    })
-  })
-}));
-
+import { ReasoningResult } from "../reasoning/types.js";
+import { formatTrace } from "../utils/traceFormatter.js";
 
 /**
- * analyzeAi.ts
- * ------------
- * AI-based analysis pipeline stub.
- * Simulates a reasoning engine using mock prompts and profile data.
- * Later, this can be connected to a real LLM API (OpenAI, Bedrock, etc.).
+ * Main AI analysis pipeline entry with real AI reasoning.
+ * This module should remain pure runtime code — no Vitest imports here.
  */
 
-/**
- * Main AI analysis pipeline entry with real AI reasoning now.
- */
-export async function analyzeAi(
-  normalized: { text: string },
-  profile: OrchestratorProfile
-) {
+export async function analyzeAi(normalized: { text: string }, profile: OrchestratorProfile) {
   const provider = await getReasoningProvider();
-  const reasoning = await provider.analyze(normalized.text, profile);
+  if (!provider) throw new Error("No reasoning provider available.");
 
-  return reasoning;
+  const reasoning = (await provider.analyze(normalized.text, profile)) as Partial<ReasoningResult>;
+
+  const trace = Array.isArray(reasoning.steps)
+    ? formatTrace(reasoning.steps, { provider: provider.id })
+    : [];
+
+  return { ...reasoning, trace };
 }

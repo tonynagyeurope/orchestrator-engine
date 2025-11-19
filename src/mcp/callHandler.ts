@@ -19,6 +19,7 @@ export interface McpCallRequest {
 
 /**
  * Structure of the MCP result event.
+ * This is what gets sent back to the MCP client on success.
  */
 export interface McpResultEvent {
   type: "mcp.result";
@@ -29,6 +30,7 @@ export interface McpResultEvent {
 
 /**
  * Structure of the MCP error event.
+ * This is what gets sent back to the MCP client on failure.
  */
 export interface McpErrorEvent {
   type: "mcp.error";
@@ -38,17 +40,40 @@ export interface McpErrorEvent {
 }
 
 /**
- * Optional event hooks used by the UI / observation log.
+ * Optional "call" event for observation logs.
+ * This is not part of the official MCP spec, but useful
+ * for UI log panels and demos.
+ */
+export interface McpCallEvent {
+  type: "mcp.event";
+  event: "call";
+  tool: string;
+  input: unknown;
+  timestamp: string;
+}
+
+/**
+ * Minimal emitter interface for structured MCP events.
+ * The concrete implementation can push to a UI log,
+ * stdout, file logging, etc.
  */
 export interface McpEventEmitter {
-  emit(event: McpResultEvent | McpErrorEvent | Record<string, unknown>): void;
+  // Allow well-known MCP events plus generic JSON events.
+  emit(
+    event:
+      | McpResultEvent
+      | McpErrorEvent
+      | McpCallEvent
+      | Record<string, unknown>
+  ): void;
 }
 
 /**
  * Main MCP call handler.
- * - Enforces guardrails
- * - Dispatches to tool registry
- * - Emits MCP events (call, result, error)
+ * - Validates incoming MCP request shape
+ * - Enforces OE guardrails
+ * - Dispatches to the tool registry
+ * - Emits structured events (call, result, error)
  */
 export class McpCallHandler {
   constructor(
@@ -60,28 +85,34 @@ export class McpCallHandler {
   /**
    * Validate whether the requested tool can be executed
    * under guardrail constraints.
+   *
+   * This uses the "config-as-control" OEConfig capabilities.
    */
   private validateGuardrails(toolName: string): void {
     const { awsApi, cliOnly } = this.config.capabilities;
 
-    // CLI-only strategy: do NOT allow tools that mutate infra
+    // In CLI-only mode, only allow read-only, "safe" tools.
+    // This keeps the MCP demo aligned with the OE philosophy:
+    // the agent may suggest commands, but not mutate infra directly.
     if (cliOnly) {
-      // In CLI-only mode, AWS API calls for mutation should be disallowed.
-      // For now, only allow GET-style read-only tools.
       const allowed = ["fetchUrl", "awsListObjects", "awsGetObject"];
 
       if (!allowed.includes(toolName)) {
-        throw new Error(
-          `Tool "${toolName}" not permitted in cli-only mode.`
-        );
+        throw new Error(`Tool "${toolName}" not permitted in cli-only mode.`);
       }
     }
 
-    // If AWS API is disabled entirely
+    // If AWS API is entirely disabled, block mutating AWS tools.
     if (!awsApi) {
-      const forbidden = ["awsPutObject", "awsDeleteObject", "awsUpdate*", "awsWrite*", "awsModify*"];
+      const forbiddenPrefixes = [
+        "awsPutObject",
+        "awsDeleteObject",
+        "awsUpdate",
+        "awsWrite",
+        "awsModify"
+      ];
 
-      if (forbidden.some(f => toolName.startsWith(f))) {
+      if (forbiddenPrefixes.some(prefix => toolName.startsWith(prefix))) {
         throw new Error(
           `AWS API access disabled, cannot execute tool "${toolName}".`
         );
@@ -90,25 +121,34 @@ export class McpCallHandler {
   }
 
   /**
-   * Core dispatcher for MCP call.
+   * Handle a single MCP call message.
+   * Returns either a result or an error event.
    */
-  async handle(req: McpCallRequest): Promise<McpResultEvent | McpErrorEvent> {
+  async handle(
+    req: McpCallRequest
+  ): Promise<McpResultEvent | McpErrorEvent> {
+    if (req.type !== "mcp.call") {
+      throw new Error(`Unsupported MCP message type: ${req.type}`);
+    }
+
     const timestamp = new Date().toISOString();
 
-    // Emit call event for log panel
-    this.emitter?.emit({
+    // Emit a "call" event so the UI / logs can show
+    // that a tool invocation was requested.
+    const callEvent: McpCallEvent = {
       type: "mcp.event",
       event: "call",
       tool: req.tool,
       input: req.input,
       timestamp
-    });
+    };
+    this.emitter?.emit(callEvent);
 
     try {
-      // Enforce guardrails
+      // Enforce OE guardrails based on config.
       this.validateGuardrails(req.tool);
 
-      // Execute tool
+      // Execute tool via registry.
       const result = await this.registry.execute(req.tool, req.input);
 
       const event: McpResultEvent = {
@@ -120,9 +160,9 @@ export class McpCallHandler {
 
       this.emitter?.emit(event);
       return event;
-    } catch (err) {
+    } catch (error) {
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown MCP tool error";
+        error instanceof Error ? error.message : "Unknown MCP tool error";
 
       const event: McpErrorEvent = {
         type: "mcp.error",
