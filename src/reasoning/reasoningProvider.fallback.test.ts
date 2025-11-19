@@ -1,29 +1,36 @@
-import { describe, it, expect, beforeEach, vi, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { getDefaultProvider } from "./providerDiscovery.js";
 import { mockReasoningProvider } from "./mockReasoningProvider.js";
 import { openaiReasoningProvider } from "./openaiReasoningProvider.js";
 
 describe("Reasoning Provider Fallback", () => {
-  const originalEnv = process.env.OPENAI_API_KEY;
+  const baseEnv = { ...process.env };
 
   beforeEach(() => {
-    vi.resetModules();
+    process.env = { ...baseEnv };
   });
 
-  it("returns OpenAI provider when OPENAI_API_KEY is defined", async () => {
-    process.env.OPENAI_API_KEY = "sk-test";
+  afterEach(() => {
+    process.env = { ...baseEnv };
+  });
+
+  it("returns OpenAI provider when OPENAI_API_KEY is defined", () => {
+    process.env.OPENAI_API_KEY = "test-key";
+
     const provider = getDefaultProvider();
-    expect(provider).toBe(openaiReasoningProvider);
+    expect(provider.id).toBe(openaiReasoningProvider.id);
   });
 
-  it("falls back to mock provider when OPENAI_API_KEY is missing", async () => {
+  it("falls back to mock provider when no real providers are available", () => {
+    // Remove OpenAI
     delete process.env.OPENAI_API_KEY;
-    const provider = getDefaultProvider();
-    expect(provider).toBe(mockReasoningProvider);
-  });
 
-  // restore environment
-  afterAll(() => {
-    if (originalEnv) process.env.OPENAI_API_KEY = originalEnv;
+    // Remove Bedrock
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
+    delete process.env.AWS_REGION;
+
+    const provider = getDefaultProvider();
+    expect(provider.id).toBe(mockReasoningProvider.id);
   });
 });
