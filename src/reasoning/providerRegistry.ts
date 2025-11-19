@@ -2,11 +2,11 @@
 
 import type { ReasoningProvider } from "./types.js";
 import { openaiReasoningProvider } from "./openaiReasoningProvider.js";
-import { mockReasoningProvider } from "./mockReasoningProvider.js";
+import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
 
 const providers: Record<string, ReasoningProvider> = {
   openai: openaiReasoningProvider,
-  mock: mockReasoningProvider,
+  bedrock: bedrockReasoningProvider
 };
 
 export function registerProvider(name: string, provider: ReasoningProvider): void {

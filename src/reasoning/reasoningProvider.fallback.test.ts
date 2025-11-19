@@ -1,36 +1,47 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { getDefaultProvider } from "./providerDiscovery.js";
-import { mockReasoningProvider } from "./mockReasoningProvider.js";
 import { openaiReasoningProvider } from "./openaiReasoningProvider.js";
+import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
 
-describe("Reasoning Provider Fallback", () => {
-  const baseEnv = { ...process.env };
+describe("Reasoning Provider Fallback (real providers)", () => {
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    process.env = { ...baseEnv };
+    process.env = { ...originalEnv };
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.AWS_REGION;
+    delete process.env.BEDROCK_MODEL_ID;
   });
 
   afterEach(() => {
-    process.env = { ...baseEnv };
+    process.env = { ...originalEnv };
   });
 
-  it("returns OpenAI provider when OPENAI_API_KEY is defined", () => {
+  it("returns OpenAI provider when OPENAI_API_KEY is set", () => {
     process.env.OPENAI_API_KEY = "test-key";
 
     const provider = getDefaultProvider();
     expect(provider.id).toBe(openaiReasoningProvider.id);
   });
 
-  it("falls back to mock provider when no real providers are available", () => {
-    // Remove OpenAI
-    delete process.env.OPENAI_API_KEY;
-
-    // Remove Bedrock
-    delete process.env.AWS_ACCESS_KEY_ID;
-    delete process.env.AWS_SECRET_ACCESS_KEY;
-    delete process.env.AWS_REGION;
+  it("returns Bedrock provider when Bedrock env variables are set", () => {
+    process.env.AWS_REGION = "us-east-1";
+    process.env.BEDROCK_MODEL_ID = "anthropic.claude-v2";
 
     const provider = getDefaultProvider();
-    expect(provider.id).toBe(mockReasoningProvider.id);
+    expect(provider.id).toBe(bedrockReasoningProvider.id);
+  });
+
+  it("prefers OpenAI over Bedrock when both are available", () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.AWS_REGION = "us-east-1";
+    process.env.BEDROCK_MODEL_ID = "anthropic.claude-v2";
+
+    const provider = getDefaultProvider();
+    expect(provider.id).toBe(openaiReasoningProvider.id);
+  });
+
+  it("throws an error when no reasoning provider is available", () => {
+    expect(() => getDefaultProvider()).toThrow();
   });
 });
