@@ -5,8 +5,8 @@
     "target": "ES2022",
     "strict": true,
     "esModuleInterop": true,
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist"
   },
-  "include": ["src"]
+  "include": ["src", "runtime"]
 }
