@@ -1,3 +1,7 @@
+# Profiles
+profiles/*.json
+!profiles/example.profile.json
+
 # Logs
 logs
 *.log
