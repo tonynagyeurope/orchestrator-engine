@@ -5,8 +5,15 @@
     "target": "ES2022",
     "strict": true,
     "esModuleInterop": true,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "declarationMap": false,
     "rootDir": ".",
     "outDir": "dist"
   },
-  "include": ["src", "runtime"]
+  "include": [
+    "src/**/*",
+    "runtime/**/*",
+    "index.ts"
+  ]
 }
