@@ -15,5 +15,14 @@
     "src/**/*",
     "runtime/**/*",
     "index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.js",
+    "src/**/*.test.ts",
+    "src/**/*.test.js"
   ]
 }

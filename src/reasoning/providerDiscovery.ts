@@ -8,20 +8,7 @@ import type { ReasoningProvider } from "./types.js";
  * Detects whether Bedrock access is available via environment configuration.
  */
 function hasBedrockEnv(): boolean {
-  const region = process.env.AWS_REGION;
-  const model = process.env.BEDROCK_MODEL_ID;
-  const key = process.env.AWS_ACCESS_KEY_ID;
-  const secret = process.env.AWS_SECRET_ACCESS_KEY;
-
-  // Bedrock must support 3 modes as required by tests
-  // Mode A: Access keys + secret + region
-  // Mode B: region + model ID
-  // Mode C: region + access key (integration test special case)
-  const modeA = region && key && secret;
-  const modeB = region && model;
-  const modeC = region && key;
-
-  return Boolean(modeA || modeB || modeC);
+  return Boolean(process.env.BEDROCK_MODEL_ID);
 }
 
 /**
@@ -33,32 +20,15 @@ function hasOpenAIEnv(): boolean {
 }
 
 /**
- * Provider selection logic compatible with all fallback tests:
- *
- * 1. Bedrock only  → bedrock
- * 2. OpenAI only   → openai
- * 3. Both present  → openai (OpenAI has priority)
- * 4. None present  → throw
+ * Provider selection logic compatible with all fallback tests
  */
-export function getDefaultProvider(): ReasoningProvider {
+export function getDefaultProvider() {
   const openai = hasOpenAIEnv();
   const bedrock = hasBedrockEnv();
 
-  // Both → OpenAI wins
-  if (openai && bedrock) {
-    return openaiReasoningProvider;
-  }
+  if (openai && bedrock) return openaiReasoningProvider;
+  if (!openai && bedrock) return bedrockReasoningProvider;
+  if (openai && !bedrock) return openaiReasoningProvider;
 
-  // Bedrock only
-  if (!openai && bedrock) {
-    return bedrockReasoningProvider;
-  }
-
-  // OpenAI only
-  if (openai && !bedrock) {
-    return openaiReasoningProvider;
-  }
-
-  // Neither
   throw new Error("No reasoning provider available.");
 }

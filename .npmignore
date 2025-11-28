@@ -1,0 +1,13 @@
+src/
+coverage/
+test/
+*.test.ts
+*.test.js
+
+dist/**/*.test.js
+dist/**/*.test.d.ts
+dist/**/*.test.js.map
+
+node_modules/
+tsconfig.json
+vitest.config.ts
