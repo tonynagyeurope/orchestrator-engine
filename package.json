@@ -38,7 +38,7 @@
 
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node ./scripts/copy-profiles.js",
     "rebuild": "rm -rf dist tsconfig.tsbuildinfo && tsc",
     "start": "node dist/index.js",
     "test": "vitest run",

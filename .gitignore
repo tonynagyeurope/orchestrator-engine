@@ -3,6 +3,11 @@ profiles/*.json
 !profiles/example.profile.json
 !profiles/default.json
 
+# block private profiles
+doit.json
+company*.json
+*.private.json
+
 # Logs
 logs
 *.log
