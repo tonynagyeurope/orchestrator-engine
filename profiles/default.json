@@ -1,0 +1,9 @@
+{
+  "name": "default",
+  "providerPriority": ["openai", "bedrock"],
+  "openaiModel": "gpt-4o-mini",
+  "bedrockModel": "amazon.titan-text-lite-v1",
+  "fallbackEnabled": true,
+  "maxSteps": 6,
+  "traceMode": "verbose"
+}

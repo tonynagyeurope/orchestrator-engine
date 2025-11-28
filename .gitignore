@@ -1,6 +1,7 @@
 # Profiles
 profiles/*.json
 !profiles/example.profile.json
+!profiles/default.json
 
 # Logs
 logs
