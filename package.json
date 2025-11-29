@@ -1,6 +1,6 @@
 {
   "name": "orchestrator-engine",
-  "version": "1.0.7",
+  "version": "1.0.11",
   "description": "A modular, config-driven Orchestrator Engine for multi-provider AI orchestration and reasoning.",
   "keywords": [
     "orchestrator",
@@ -25,13 +25,16 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+    ".": "./dist/index.js",
+    "./dist/*": "./dist/*",
+    "./dist/profiles/default.json": "./dist/profiles/default.json",
+    "./dist/profiles/aws-cli-generator.json": "./dist/profiles/aws-cli-generator.json",
+    "./dist/profiles/aws-demo.json": "./dist/profiles/aws-demo.json",
+    "./dist/profiles/github.json": "./dist/profiles/github.json"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "profiles/"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",

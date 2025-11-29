@@ -8,11 +8,15 @@ import { OrchestratorProfile } from "../config/baseConfig.js";
  */
 export const openaiReasoningProvider: ReasoningProvider = {
   id: "openai",
+
   async analyze(input: string, profile: OrchestratorProfile): Promise<ReasoningResult> {
     const apiKey = process.env.OPENAI_API_KEY;
 
+    // Resolve profile optional fields safely
+    const rules = profile.rules ?? [];
+    const examples = profile.examples ?? [];
+
     if (!apiKey) {
-      // fallback for CI / offline mode
       return {
         summary: `[mock] Missing OPENAI_API_KEY → simulated reasoning for "${profile.displayName}"`,
         steps: [
@@ -23,14 +27,26 @@ export const openaiReasoningProvider: ReasoningProvider = {
       };
     }
 
-    const prompt = [
-      `You are a reasoning engine specialized in orchestration analysis.`,
-      `Profile: ${profile.displayName}`,
-      `Domain: ${profile.domainFocus}`,
-      `System prompt: ${profile.systemPrompt}`,
-      `Task: ${input}`,
-      `Return a short reasoning trace (3-5 steps) and final summary.`
-    ].join("\n");
+    const prompt = `
+You are a reasoning agent.
+Profile: ${profile.displayName}
+
+Description:
+${profile.description ?? ""}
+
+Rules:
+${rules.length > 0 ? rules.map(r => `- ${r}`).join("\n") : "(no rules provided)"}
+
+Examples:
+${examples.length > 0
+      ? examples.map(ex => `User: ${ex.input}\nAssistant: ${JSON.stringify(ex.output)}`).join("\n\n")
+      : "(no examples provided)"}
+
+User input:
+${input}
+
+Generate output based on the rules above.
+`.trim();
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -41,7 +57,7 @@ export const openaiReasoningProvider: ReasoningProvider = {
       body: JSON.stringify({
         model: process.env.OE_OPENAI_MODEL ?? "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
+        temperature: profile.temperature ?? 0.3,
         max_tokens: 400
       })
     });
@@ -65,3 +81,4 @@ export const openaiReasoningProvider: ReasoningProvider = {
     };
   }
 };
+
