@@ -1,71 +1,74 @@
-// src/config/profileLoader.ts
-
-import fs from "fs";
-import path from "path";
-import { OrchestratorProfile, defaultProfiles } from "./baseConfig.js";
+// FILE: src/config/profileLoader.ts
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { orchestratorProfileSchema } from "./profileSchema.js";
 
 /**
- * Profile Loader with Overlay & Cache
- * -----------------------------------
- * Loads orchestration profiles from multiple sources (public + private),
- * merges overrides, and caches results in-memory for performance.
+ * Find the true project root by walking upward until package.json is found.
+ * Works identically in src/, dist/, CI, Docker, Lambda, Vitest.
  */
+function findProjectRoot(start: string): string {
+  let current = start;
 
-const cache = new Map<string, OrchestratorProfile>();
+  while (true) {
+    const pkg = path.join(current, "package.json");
+    if (fs.existsSync(pkg)) {
+      return current;
+    }
 
-export function __clearProfileCache() {
-  cache.clear();
+    const parent = path.dirname(current);
+    if (parent === current) {
+      throw new Error("Could not locate project root (package.json not found).");
+    }
+
+    current = parent;
+  }
 }
 
-function mergeProfiles(
-  base: OrchestratorProfile,
-  overlay: Partial<OrchestratorProfile>
-): OrchestratorProfile {
-  return {
-    ...base,
-    ...overlay,
-    uiLabels: { ...base.uiLabels, ...overlay.uiLabels },
-    exampleUseCases: overlay.exampleUseCases || base.exampleUseCases,
-  };
-}
+const thisFile = fileURLToPath(import.meta.url);
+const thisDir = path.dirname(thisFile);
 
-export async function loadProfile(profileId: string): Promise<OrchestratorProfile> {
-  // 1. Return from cache if available
-  if (cache.has(profileId)) return cache.get(profileId)!;
+// True project root (repo root), regardless of src/dist/tests
+const projectRoot = findProjectRoot(thisDir);
 
-  let privateOverlay: Partial<OrchestratorProfile> | undefined;
+// Two possible profile locations
+const repoProfilesDir = path.join(projectRoot, "profiles");
+const distProfilesDir = path.join(projectRoot, "dist", "profiles");
 
-  // 2. Load from local JSON file
-  const filePath = process.env.PRIVATE_PROFILE_PATH;
-  if (filePath && fs.existsSync(filePath)) {
-    try {
-      const raw = fs.readFileSync(path.resolve(filePath), "utf8");
-      const profiles = JSON.parse(raw) as Record<string, OrchestratorProfile>;
-      if (profiles[profileId]) privateOverlay = profiles[profileId];
-    } catch (err) {
-      console.warn(`[OE] Failed to read private profile file: ${err}`);
-    }
+/**
+ * We must ensure that:
+ *   - Vitest/Jest (test mode) → ALWAYS use repo/profiles
+ *   - Dev mode                → use repo/profiles
+ *   - Runtime in production   → prefer dist/profiles if it exists
+ *
+ * This avoids CI race conditions and keeps test environment deterministic.
+ */
+const isTest =
+  process.env.NODE_ENV === "test" ||
+  process.env.VITEST_WORKER_ID !== undefined;
+
+// Select the correct profile directory
+const profilesDir = isTest
+  ? repoProfilesDir
+  : fs.existsSync(distProfilesDir)
+      ? distProfilesDir
+      : repoProfilesDir;
+
+/**
+ * Load and validate a profile JSON file by ID.
+ */
+export async function loadProfile(profileId: string) {
+  const filePath = path.join(profilesDir, `${profileId}.json`);
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(
+      `Profile not found: ${profileId} at ${filePath}`
+    );
   }
 
-  // 3. Load from remote JSON URL
-  const remoteUrl = process.env.PRIVATE_PROFILE_URL;
-  if (!privateOverlay && remoteUrl) {
-    try {
-      const res = await fetch(remoteUrl);
-      if (res.ok) {
-        const profiles = (await res.json()) as Record<string, OrchestratorProfile>;
-        if (profiles[profileId]) privateOverlay = profiles[profileId];
-      }
-    } catch (err) {
-      console.warn(`[OE] Failed to fetch private profile from ${remoteUrl}: ${err}`);
-    }
-  }
+  const raw = await fs.promises.readFile(filePath, "utf8");
+  const json = JSON.parse(raw);
 
-  // 4. Merge with default base profile
-  const base = defaultProfiles[profileId] || defaultProfiles["ai"];
-  const merged = privateOverlay ? mergeProfiles(base, privateOverlay) : base;
-
-  // 5. Cache and return
-  cache.set(profileId, merged); // Need to call !!!
-  return merged;
+  return orchestratorProfileSchema.parse(json);
 }

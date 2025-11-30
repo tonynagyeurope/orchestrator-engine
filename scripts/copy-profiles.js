@@ -1,25 +1,27 @@
-import fs from "fs";
-import path from "path";
+/**
+ * Copies the profiles/ directory into dist/profiles during build.
+ * Ensures that production builds can load profiles without relying on src paths.
+ */
 
-const src = path.resolve("profiles");
-const dest = path.resolve("dist", "profiles");
+import fs from "node:fs";
+import path from "node:path";
 
-// Ensure source exists
-if (!fs.existsSync(src)) {
-  console.error("Profiles directory not found:", src);
+const root = process.cwd();
+const srcDir = path.join(root, "profiles");
+const destDir = path.join(root, "dist", "profiles");
+
+if (!fs.existsSync(srcDir)) {
+  console.error("profiles directory does not exist:", srcDir);
   process.exit(1);
 }
 
-// Create dist/profiles folder
-fs.mkdirSync(dest, { recursive: true });
+fs.rmSync(destDir, { recursive: true, force: true });
+fs.mkdirSync(destDir, { recursive: true });
 
-// Copy all json files
-for (const file of fs.readdirSync(src)) {
-  const srcFile = path.join(src, file);
-  const destFile = path.join(dest, file);
-
-  if (file.endsWith(".json")) {
-    fs.copyFileSync(srcFile, destFile);
-    console.log("Copied:", file);
-  }
+for (const file of fs.readdirSync(srcDir)) {
+  const from = path.join(srcDir, file);
+  const to = path.join(destDir, file);
+  fs.copyFileSync(from, to);
 }
+
+console.log("[copy-profiles] profiles copied to dist/profiles");

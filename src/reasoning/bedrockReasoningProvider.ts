@@ -1,38 +1,114 @@
+// FILE: src/reasoning/bedrockReasoningProvider.ts
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import type { ReasoningProvider } from "./types.js";
+import { ReasoningResult, TraceStep } from "./types.js";
+import { OrchestratorProfile } from "../config/baseConfig.js";
 
-export const bedrockReasoningProvider: ReasoningProvider = {
-  id: "bedrock-titan",
-  async analyze(input: string) {
-    const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION || "us-east-1" });
+/**
+ * Amazon Bedrock reasoning provider.
+ * Produces standardized ReasoningResult objects for the OE core.
+ */
+export const bedrockReasoningProvider = {
+  id: "bedrock",
 
-    const modelId = "amazon.titan-text-lite-v1";
+  async run(prompt: string, profile: OrchestratorProfile): Promise<ReasoningResult> {
+    const modelId = profile.model ?? process.env.BEDROCK_MODEL_ID;
+    const region = process.env.BEDROCK_REGION ?? "us-east-1";
 
-    const payload = {
-      inputText: input,
+    // --- 1) Missing configuration → fallback reasoning -------------------------
+    if (!modelId) {
+      const trace: TraceStep[] = [
+        {
+          index: 0,
+          text: "Bedrock model missing → simulated reasoning provider used.",
+          timestamp: new Date().toISOString(),
+          meta: { provider: "bedrock", simulated: true }
+        }
+      ];
+
+      return {
+        final: `[mock-bedrock] No model configured. Profile="${profile.title}".`,
+        trace,
+        meta: { provider: "bedrock", profileId: profile.id, mock: true }
+      };
+    }
+
+    // --- 2) Create Bedrock client ------------------------------------------------
+    const client = new BedrockRuntimeClient({ region });
+
+    // Bedrock Claude-like / Titan-like models expect this structure
+    const bedrockPayload = {
+      inputText: profile.prompt.join("\n") + "\n\nUser Input:\n" + prompt,
       textGenerationConfig: {
-        maxTokenCount: 256,
-        temperature: 0.7,
-        topP: 0.9
+        temperature: profile.temperature ?? 0.3,
+        maxTokenCount: 500
       }
     };
 
-    const command = new InvokeModelCommand({
-      modelId,
-      contentType: "application/json",
-      accept: "application/json",
-      body: JSON.stringify(payload)
-    });
+    let rawResponse: string = "";
+    let finalText: string = "";
 
-    const response = await client.send(command);
-    const json = JSON.parse(new TextDecoder().decode(response.body));
+    // --- 3) Invoke the model -----------------------------------------------------
+    try {
+      const command = new InvokeModelCommand({
+        modelId,
+        body: JSON.stringify(bedrockPayload),
+        contentType: "application/json",
+        accept: "application/json"
+      });
 
+      const response = await client.send(command);
+
+      rawResponse = Buffer.from(response.body).toString("utf8");
+
+      const parsed = JSON.parse(rawResponse);
+
+      // Titan / Claude / Llama-based models unify under outputText
+      finalText =
+        parsed.outputText ??
+        parsed.completions?.[0]?.data?.text ??
+        "[bedrock] No outputText returned by model.";
+
+    } catch (err) {
+      return {
+        final: `[bedrock:error] ${String(err)}`,
+        trace: [
+          {
+            index: 0,
+            text: "Bedrock API error occurred.",
+            timestamp: new Date().toISOString(),
+            meta: { provider: "bedrock", error: true, message: String(err) }
+          }
+        ],
+        meta: {
+          provider: "bedrock",
+          profileId: profile.id,
+          error: true
+        }
+      };
+    }
+
+    // --- 4) Build trace ----------------------------------------------------------
+    const trace: TraceStep[] = [
+      {
+        index: 0,
+        text: "Bedrock reasoning completed successfully.",
+        timestamp: new Date().toISOString(),
+        meta: {
+          provider: "bedrock",
+          modelId,
+          profileId: profile.id
+        }
+      }
+    ];
+
+    // --- 5) Return standardized ReasoningResult ---------------------------------
     return {
-      summary: json.results?.[0]?.outputText ?? "No output",
-      steps: ["Model invoked", "Output parsed"],
+      final: finalText,
+      trace,
       meta: {
-        model: modelId,
-        tokenCount: json.results?.[0]?.tokenCount ?? 0
+        provider: "bedrock",
+        modelId,
+        profileId: profile.id
       }
     };
   }

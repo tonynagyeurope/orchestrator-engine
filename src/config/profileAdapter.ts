@@ -1,51 +1,32 @@
-import type { OrchestratorProfile } from "./baseConfig.js";
+// FILE: src/config/profileAdapter.ts
+import { OrchestratorProfile } from "./baseConfig.js";
 
 /**
- * Converts a generic JSON config object into a valid OrchestratorProfile.
- * Missing required fields are filled with safe defaults.
+ * Adapter to normalize raw JSON into a valid OrchestratorProfile.
+ * Currently redundant because JSON is validated by Zod,
+ * but kept for future extension (transform rules, migrations, etc.)
  */
-export function toOrchestratorProfile(
-  json: Record<string, unknown>
-): OrchestratorProfile {
-
+export function toOrchestratorProfile(json: Record<string, unknown>): OrchestratorProfile {
   return {
-    id: String(json.id ?? "custom-profile"),
+    id: String(json.id),
+    title: String(json.title),
 
-    displayName: String(json.displayName ?? "Custom Profile"),
+    model: String(json.model),
+    temperature: Number(json.temperature),
+    maxSteps: Number(json.maxSteps),
 
-    domainFocus: String(json.domainFocus ?? "general"),
+    prompt: Array.isArray(json.prompt) ? json.prompt.map(String) : [],
 
-    systemPrompt: String(json.systemPrompt ?? ""),
+    rules: Array.isArray(json.rules)
+      ? json.rules.map(String)
+      : undefined,
 
-    uiLabels: normalizeUiLabels(json.uiLabels),
+    style: json.style as OrchestratorProfile["style"] | undefined,
 
-    ...json
+    examples: Array.isArray(json.examples)
+      ? (json.examples as OrchestratorProfile["examples"])
+      : undefined,
+
+    orchestration: json.orchestration as OrchestratorProfile["orchestration"] | undefined
   };
-}
-
-/**
- * Ensures uiLabels is a Record<string,string>.
- * Accepts:
- *  - missing → returns default
- *  - string → wraps as { default: string }
- *  - object → casts safely
- */
-function normalizeUiLabels(value: unknown): Record<string, string> {
-  if (!value) {
-    return { default: "Profile" };
-  }
-
-  if (typeof value === "string") {
-    return { default: value };
-  }
-
-  if (typeof value === "object") {
-    const record: Record<string, string> = {};
-    for (const [k, v] of Object.entries(value)) {
-      record[k] = String(v);
-    }
-    return record;
-  }
-
-  return { default: "Profile" };
 }

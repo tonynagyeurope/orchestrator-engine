@@ -1,23 +1,14 @@
-// src/pipeline/analyzeAi.ts
+// FILE: src/pipeline/analyzeAi.ts
 import type { OrchestratorProfile } from "../config/baseConfig.js";
-import { getReasoningProvider } from "../reasoning/reasoningProvider.js";
-import { ReasoningResult } from "../reasoning/types.js";
-import { formatTrace } from "../utils/traceFormatter.js";
+import type { ReasoningProvider, ReasoningResult } from "../reasoning/types.js";
 
 /**
- * Main AI analysis pipeline entry with real AI reasoning.
- * This module should remain pure runtime code — no Vitest imports here.
+ * Executes a single AI reasoning step.
  */
-
-export async function analyzeAi(normalized: { text: string }, profile: OrchestratorProfile) {
-  const provider = await getReasoningProvider();
-  if (!provider) throw new Error("No reasoning provider available.");
-
-  const reasoning = (await provider.analyze(normalized.text, profile)) as Partial<ReasoningResult>;
-
-  const trace = Array.isArray(reasoning.steps)
-    ? formatTrace(reasoning.steps, { provider: provider.id })
-    : [];
-
-  return { ...reasoning, trace };
+export async function analyzeAi(
+  input: string,
+  profile: OrchestratorProfile,
+  provider: ReasoningProvider
+): Promise<ReasoningResult> {
+  return provider.run(input, profile);
 }

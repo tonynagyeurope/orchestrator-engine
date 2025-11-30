@@ -1,29 +1,19 @@
-// src/pipeline/synthesizeOutput.ts
-
-import { OrchestratorProfile } from "../config/baseConfig.js";
-import { formatTrace, TraceStep } from "../utils/traceFormatter.js";
+// FILE: src/pipeline/synthesizeOutput.ts
+import type { OrchestratorProfile } from "../config/baseConfig.js";
+import { ReasoningResult } from "../reasoning/types.js";
 
 /**
- * Step 3 - Synthesize Output
- * Generates a structured JSON output for downstream visualization or storage.
+ * For A-option simplicity:
+ * final = result.final (LLM output)
+ * trace = provider-generated reasoning chain
  */
 export async function synthesizeOutput(
-  analysis: { summary: string; steps: string[]; meta?: Record<string, unknown> },
+  result: ReasoningResult,
   profile: OrchestratorProfile
-): Promise<{
-  profile: string;
-  summary: string;
-  steps: string[];
-  trace: TraceStep[];
-  meta?: Record<string, unknown>;
-}> {
-  const trace = formatTrace(analysis.steps, analysis.meta);
-
+) {
   return {
-    profile: profile.displayName,
-    summary: analysis.summary,
-    steps: analysis.steps,
-    trace, 
-    meta: analysis.meta
+    final: result.final,
+    trace: result.trace,
+    profileId: profile.id
   };
 }

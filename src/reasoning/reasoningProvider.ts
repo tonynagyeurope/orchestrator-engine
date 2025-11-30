@@ -1,6 +1,8 @@
 // src/reasoning/reasoningProvider.ts
 import { openaiReasoningProvider } from "./openaiReasoningProvider.js";
 import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
+import type { ReasoningResult } from "../reasoning/types.js";
+import { OrchestratorProfile } from "../config/baseConfig.js";
 
 /**
  * Reasoning provider interface definition.
@@ -8,7 +10,11 @@ import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
  */
 export interface ReasoningProvider {
   id: string;
-  analyze: (text: string, profile: unknown) => Promise<unknown>;
+
+  run(
+    prompt: string,
+    profile: OrchestratorProfile
+  ): Promise<ReasoningResult>;
 }
 
 /**
