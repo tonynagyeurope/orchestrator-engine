@@ -1,29 +1,36 @@
-import path from "path";
 import fs from "fs";
+import path from "path";
 import { fileURLToPath } from "url";
-import { OrchestratorProfile } from "./baseConfig.js";
+import { orchestratorProfileSchema } from "./profileSchema.js";
 
-export async function resolveProfilesDir(): Promise<string> {
-  // Current file (after build):
-  // dist/src/config/profileLoader.js
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+/**
+ * Resolve dist/profiles at runtime.
+ * ESM + tsc build → dist/config/ is the current folder.
+ *
+ * Root:
+ *   profiles/*.json         ← source
+ * Build:
+ *   dist/profiles/*.json    ← runtime
+ */
+function resolveProfilesDir(): string {
+  // dist/src/config → two levels up → dist
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const distRoot = path.join(dir, "..", "..");
+  const profilesDir = path.join(distRoot, "profiles");
 
-  // dist/src/config → dist/profiles
-  const profilesPath = path.join(currentDir, "../../profiles");
-
-  return profilesPath;
+  return profilesDir;
 }
 
-
-export async function loadProfile(profileId: string): Promise<OrchestratorProfile> {
+export async function loadProfile(profileId: string) {
   const profilesDir = await resolveProfilesDir();
-
   const filePath = path.join(profilesDir, `${profileId}.json`);
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`Profile not found: ${profileId} at ${filePath}`);
   }
 
-  const json = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(json) as OrchestratorProfile;
+  const raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const parsed = orchestratorProfileSchema.parse(raw);
+
+  return parsed;
 }

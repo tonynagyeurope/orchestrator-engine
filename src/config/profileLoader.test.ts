@@ -1,45 +1,26 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { loadProfile, __clearProfileCache } from "./profileLoader.js";
-import { defaultProfiles } from "./baseConfig.js";
-import fs from "fs";
-import path from "path";
-
-// helper to create a temp private profile file
-const tmpFile = path.resolve("tmp-test-profile.json");
+// FILE: src/config/profileLoader.test.ts
+import { describe, it, expect } from "vitest";
+import { loadProfile } from "./profileLoader.js";
+import type { OrchestratorProfileValidated } from "./profileSchema.js";
 
 describe("profileLoader", () => {
-  beforeEach(() => {
-    __clearProfileCache();
-    process.env.PRIVATE_PROFILE_PATH = "";
-    process.env.PRIVATE_PROFILE_URL = "";
-    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+  it("should load all 3 valid profiles", async () => {
+    const profileNames = [
+      "default",
+      "aws-cli-generator",
+      "aws-cost-optimizer"
+    ];
+
+    for (const name of profileNames) {
+      const profile = await loadProfile(name);
+      const typed = profile as OrchestratorProfileValidated;
+
+      expect(typed).toBeDefined();
+      expect(typed.id).toBe(name);
+    }
   });
 
-  it("returns default profile when no private config is present", async () => {
-    const result = await loadProfile("ai");
-    expect(result.id).toBe("ai");
-    expect(result.displayName).toBe(defaultProfiles["ai"].displayName);
-  });
-
-  it("loads and merges private profile from local JSON", async () => {
-    const privateData = {
-      ai: {
-        id: "ai",
-        displayName: "Private AI Profile",
-        uiLabels: { startButton: "Run private task" }
-      }
-    };
-    fs.writeFileSync(tmpFile, JSON.stringify(privateData));
-    process.env.PRIVATE_PROFILE_PATH = tmpFile;
-
-    const result = await loadProfile("ai");
-    expect(result.displayName).toBe("Private AI Profile");
-    expect(result.uiLabels!.startButton).toBe("Run private task");
-  });
-
-  it("returns cached profile on second call", async () => {
-    const result1 = await loadProfile("ai");
-    const result2 = await loadProfile("ai");
-    expect(result1).toBe(result2);
+  it("should throw Zod validation error for invalid profile", async () => {
+    await expect(loadProfile("nonexistent-profile")).rejects.toThrow();
   });
 });

@@ -5,14 +5,14 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - bedrock:InvokeModel
-      Resource: "*"
 
 functions:
-  bedrockInvoke:
-    handler: infra/bedrockHandler.handler
-    environment:
-      MODEL_ID: anthropic.claude-3-haiku-20240307
+  oe:
+    handler: infra/oeHandler.handler
+    timeout: 30
+    memorySize: 512
+    runtime: nodejs20.x
+    events:
+      - httpApi:
+          path: /oe
+          method: POST      
