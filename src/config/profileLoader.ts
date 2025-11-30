@@ -1,36 +1,24 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+// FILE: src/config/profileLoader.ts
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { orchestratorProfileSchema } from "./profileSchema.js";
 
-/**
- * Resolve dist/profiles at runtime.
- * ESM + tsc build → dist/config/ is the current folder.
- *
- * Root:
- *   profiles/*.json         ← source
- * Build:
- *   dist/profiles/*.json    ← runtime
- */
-function resolveProfilesDir(): string {
-  // dist/src/config → two levels up → dist
-  const dir = path.dirname(fileURLToPath(import.meta.url));
-  const distRoot = path.join(dir, "..", "..");
-  const profilesDir = path.join(distRoot, "profiles");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-  return profilesDir;
-}
+// Load profiles always from root/profiles/, not from dist/
+const profilesDir = join(__dirname, "../../profiles");
 
 export async function loadProfile(profileId: string) {
-  const profilesDir = await resolveProfilesDir();
-  const filePath = path.join(profilesDir, `${profileId}.json`);
+  const filePath = join(profilesDir, `${profileId}.json`);
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`Profile not found: ${profileId} at ${filePath}`);
   }
 
-  const raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  const parsed = orchestratorProfileSchema.parse(raw);
+  const raw = await fs.promises.readFile(filePath, "utf8");
+  const json = JSON.parse(raw);
 
-  return parsed;
+  return orchestratorProfileSchema.parse(json);
 }

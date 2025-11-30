@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Copy profiles
+        run: node scripts/copy-profiles.js
+
       - name: TypeScript build
         run: npm run build
 
