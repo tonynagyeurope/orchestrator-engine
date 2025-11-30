@@ -46,6 +46,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "copy-profiles": "node scripts/copy-profiles.js",
     "clean": "rm -rf dist",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
