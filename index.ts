@@ -1,11 +1,9 @@
-// Public API of the Orchestrator Engine by Tony Nagy
+// FILE: index.ts (root of project)
 
-// Core orchestration pipeline
-export { runOrchestration } from "./src/index.js";
+export { runPipeline } from "./src/pipeline/runPipeline.js";
+export { getProvider } from "./src/reasoning/providerFactory.js";
+export { loadProfile } from "./src/config/profileLoader.js";
 
-// Types (config, mcp, reasoning)
-export * from "./src/types/index.js";
-
-// Optional: expose runtime helpers if needed later
-// export * from "./runtime/runEngine.js";
-// export * from "./runtime/api/getLogs.js";
+// re-export types
+export type { ReasoningProvider } from "./src/reasoning/reasoningProvider.js";
+export type { OrchestratorProfile } from "./src/config/baseConfig.js";

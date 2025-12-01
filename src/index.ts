@@ -1,37 +1,31 @@
 // FILE: src/index.ts
-import kleur from "kleur";
-import { loadProfile } from "./config/profileLoader.js";
-import { getDefaultProvider } from "./reasoning/providerDiscovery.js";
-import { runPipeline } from "./pipeline/runPipeline.js";
-import { renderTrace } from "./utils/traceRenderer.js";
 
-/**
- * Main orchestration entry point.
- */
+import { loadProfile } from "./config/profileLoader.js";
+import { getProvider } from "./reasoning/providerFactory.js";
+import { runSinglePipeline } from "./pipeline/runSinglePipeline.js";
+
 export async function runOrchestration(
   input: string,
-  profileId: string
+  profileId: string,
+  providerName?: string
 ) {
-  console.log(`[OE] Starting orchestration for profile: ${profileId}`);
-
+  // Load profile
   const profile = await loadProfile(profileId);
 
-  const provider = getDefaultProvider();
-  console.log(`[OE] Selected provider: ${provider.id}`);
+  // Provider selection
+  const provider = getProvider(providerName ?? "openai");
 
-  const result = await runPipeline(input, profile, provider);
+  const mode = profile.orchestration?.mode ?? "single";
 
-  renderTrace(result.trace);
+  switch (mode) {
+    case "single":
+    case "sequential":
+    case "parallel":
+      // Top-level API ALWAYS triggers single reasoning mode.
+      // Orchestration is only triggered INSIDE profiles, not here.
+      return runSinglePipeline(profile, input, provider);
 
-  console.log(kleur.green(`[OE] Orchestration completed for "${profile.id}".`));
-
-  return result;
-}
-
-// Local test run
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const input = "Example reasoning test";
-  runOrchestration(input, "ai").then((res) => {
-    console.log(JSON.stringify(res, null, 2));
-  });
+    default:
+      throw new Error(`Unknown orchestration mode: ${mode}`);
+  }
 }

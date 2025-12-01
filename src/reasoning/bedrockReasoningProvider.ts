@@ -19,7 +19,7 @@ export const bedrockReasoningProvider = {
       const trace: TraceStep[] = [
         {
           index: 0,
-          text: "Bedrock model missing → simulated reasoning provider used.",
+          message: "Bedrock model missing → simulated reasoning provider used.",
           timestamp: new Date().toISOString(),
           meta: { provider: "bedrock", simulated: true }
         }
@@ -74,7 +74,7 @@ export const bedrockReasoningProvider = {
         trace: [
           {
             index: 0,
-            text: "Bedrock API error occurred.",
+            message: "Bedrock API error occurred.",
             timestamp: new Date().toISOString(),
             meta: { provider: "bedrock", error: true, message: String(err) }
           }
@@ -91,7 +91,7 @@ export const bedrockReasoningProvider = {
     const trace: TraceStep[] = [
       {
         index: 0,
-        text: "Bedrock reasoning completed successfully.",
+        message: "Bedrock reasoning completed successfully.",
         timestamp: new Date().toISOString(),
         meta: {
           provider: "bedrock",

@@ -1,10 +1,10 @@
 // FILE: src/mcp/server.ts
-import { handleRpcRequest } from "./rpcHandler.js";
+import { handleRpcRequest, RpcResponse } from "./rpcHandler.js";
 
 /**
  * Minimal local MCP-style server
  * This is only for local development & testing.
  */
-export async function handleMcpCall(body: unknown) {
+export async function handleMcpCall(body: unknown): Promise<RpcResponse> {
   return handleRpcRequest(body);
 }
