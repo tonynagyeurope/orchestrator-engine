@@ -12,3 +12,11 @@ const providers: Record<string, ReasoningProvider> = {
 export function getProvider(name: string): ReasoningProvider {
   return providers[name] ?? openaiReasoningProvider;
 }
+
+/**
+ * Return a list of available reasoning provider IDs.
+ * This matches the providers registered in providerFactory.
+ */
+export function getAvailableProviders(): string[] {
+  return ["openai", "bedrock", "mock"];
+}

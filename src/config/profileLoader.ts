@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { orchestratorProfileSchema } from "./profileSchema.js";
 import type { OrchestratorProfile } from "./baseConfig.js";
+import { readdir, readFile } from "node:fs/promises";
 
 /**
  * Find the true project root by walking upward until package.json is found.
@@ -62,3 +63,38 @@ export async function loadProfile(profileId: string): Promise<OrchestratorProfil
 
   return orchestratorProfileSchema.parse(json);
 }
+
+
+/**
+ * Load all profile JSON files from the /profiles directory.
+ * Works in ESM + TypeScript + Node 20 (your project setup).
+ */
+export async function loadAllProfiles() {
+  // Resolve absolute path to the /profiles directory
+  const profilesDir = path.resolve(process.cwd(), "profiles");
+
+  // Read all files in the directory
+  const files = await readdir(profilesDir);
+
+  // Filter JSON files
+  const jsonFiles = files.filter((f) => f.endsWith(".json"));
+
+  const profiles: Record<string, unknown>[] = [];
+
+  for (const file of jsonFiles) {
+    const filePath = path.join(profilesDir, file);
+
+    // Read file content as UTF-8 text
+    const raw = await readFile(filePath, { encoding: "utf-8" });
+
+    try {
+      const parsed = JSON.parse(raw);
+      profiles.push(parsed);
+    } catch (err) {
+      console.error(`Failed to parse JSON profile: ${filePath}`, err);
+    }
+  }
+
+  return profiles;
+}
+
