@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { orchestratorProfileSchema } from "./profileSchema.js";
+import type { OrchestratorProfile } from "./baseConfig.js";
 
 /**
  * Find the true project root by walking upward until package.json is found.
@@ -36,19 +37,10 @@ const projectRoot = findProjectRoot(thisDir);
 const repoProfilesDir = path.join(projectRoot, "profiles");
 const distProfilesDir = path.join(projectRoot, "dist", "profiles");
 
-/**
- * We must ensure that:
- *   - Vitest/Jest (test mode) → ALWAYS use repo/profiles
- *   - Dev mode                → use repo/profiles
- *   - Runtime in production   → prefer dist/profiles if it exists
- *
- * This avoids CI race conditions and keeps test environment deterministic.
- */
 const isTest =
   process.env.NODE_ENV === "test" ||
   process.env.VITEST_WORKER_ID !== undefined;
 
-// Select the correct profile directory
 const profilesDir = isTest
   ? repoProfilesDir
   : fs.existsSync(distProfilesDir)
@@ -58,13 +50,11 @@ const profilesDir = isTest
 /**
  * Load and validate a profile JSON file by ID.
  */
-export async function loadProfile(profileId: string) {
+export async function loadProfile(profileId: string): Promise<OrchestratorProfile> {
   const filePath = path.join(profilesDir, `${profileId}.json`);
 
   if (!fs.existsSync(filePath)) {
-    throw new Error(
-      `Profile not found: ${profileId} at ${filePath}`
-    );
+    throw new Error(`Profile not found: ${profileId} at ${filePath}`);
   }
 
   const raw = await fs.promises.readFile(filePath, "utf8");

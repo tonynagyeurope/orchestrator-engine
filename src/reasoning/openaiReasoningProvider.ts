@@ -20,7 +20,7 @@ export const openaiReasoningProvider = {
       const fallbackTrace: TraceStep[] = [
         {
           index: 0,
-          text: "OpenAI API key missing → using mock reasoning provider",
+          message: "OpenAI API key missing → using mock reasoning provider",
           timestamp: new Date().toISOString(),
           meta: { provider: "openai", simulated: true }
         }
@@ -72,7 +72,7 @@ export const openaiReasoningProvider = {
         trace: [
           {
             index: 0,
-            text: "OpenAI API returned non-200 status",
+            message: "OpenAI API returned non-200 status",
             timestamp: new Date().toISOString(),
             meta: { status: response.status }
           }
@@ -98,7 +98,7 @@ export const openaiReasoningProvider = {
     const trace: TraceStep[] = [
       {
         index: 0,
-        text: "OpenAI reasoning step completed.",
+        message: "OpenAI reasoning step completed.",
         timestamp: new Date().toISOString(),
         meta: {
           provider: "openai",

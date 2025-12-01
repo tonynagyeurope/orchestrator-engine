@@ -1,8 +1,8 @@
 // src/utils/traceRenderer.ts
 
 import kleur from "kleur";
-import { TraceStep } from "./traceFormatter.js";
 import { TraceConfig } from "../config/baseConfig.js";
+import { TraceStep } from "../reasoning/types.js";
 
 /**
  * traceRenderer.ts
@@ -31,7 +31,7 @@ export function renderTrace(trace: TraceStep[], config?: TraceConfig): void {
     const time = useTimestamps
       ? color.gray(`[${new Date(step.timestamp).toISOString().split("T")[1].split(".")[0]}] `)
       : "";
-    const text = color.white(step.text);
+    const text = color.white(step.message);
 
     if (compact) {
       console.log(`${index} ${time}${text}`);

@@ -53,9 +53,18 @@ export const OrchestratorProfileSchema = z.object({
         )
         .optional(),
 
-      mergeStrategy: z.enum(["concat", "summary", "json-merge", "custom"]).optional(),
+      // for parallel fan-in merge
+      mergeStrategy: z
+        .enum(["concat", "summary", "json-merge", "custom"])
+        .optional(),
 
-      summaryProfileId: z.string().optional()
+      // for sequential summary pipeline
+      summaryProfileId: z.string().optional(),
+
+      // for summary strategy (UNIT 8.8)
+      summaryStrategy: z
+        .enum(["concat", "json-merge", "summary", "custom"])
+        .optional()
     })
     .optional()
 });

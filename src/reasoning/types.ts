@@ -5,10 +5,17 @@
  * Providers append steps to give transparency on how the reasoning evolved.
  */
 export interface TraceStep {
-  index: number;
-  text: string;
-  timestamp: string;
-  meta: Record<string, unknown>;
+  index: number;                // global trace index
+  timestamp: string;            // ISO timestamp
+  message: string;              // human-readable description
+
+  // Stage-2 additions:
+  step?: number;                // multi-step iteration index
+  source?: "provider" | "pipeline" | "stop-rule";
+  event?: string;               // stop:stabilized, stop:timeout, etc.
+
+  // Optional metadata payload for advanced cases.
+  meta?: Record<string, unknown>;  
 }
 
 /**
