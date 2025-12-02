@@ -11,18 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Region (needed for any AWS QA tests)
       AWS_REGION: us-east-1
 
-      # Secrets (optional for reasoning tests)
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # OpenAI (new env var)
+      OE_OPENAI_API_KEY: ${{ secrets.OE_OPENAI_API_KEY }}
+      OE_OPENAI_MODEL: "gpt-4o-mini"
 
-      # Avoid Bedrock calls unless explicitly enabled
+      # Disable real external calls by default
+      OE_REASONING_MODE: "mock"
       DISABLE_BEDROCK: "true"
 
-      # Ensure vitest sees itself as test mode
+      # Needed for any test environment
       NODE_ENV: "test"
 
     steps:
@@ -38,18 +37,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Clean any old build artifacts
+      - name: Clean old build
         run: rm -rf dist
 
       - name: TypeScript build
         run: npm run build
 
-      # Copy profiles into dist for runtime compatibility
-      # (tests will not use this, but runtime will)
+      # Copy profiles into dist (runtime-compatible)
       - name: Copy profiles
         run: npm run copy-profiles
 
-      # Debug step (can be removed later)
       - name: Verify profiles existence
         run: |
           echo "Repo profiles:"
@@ -57,5 +54,6 @@ jobs:
           echo "Dist profiles:"
           ls -al dist/profiles || echo "dist/profiles missing"
 
+      # Tests run in "mock" mode only (safe!)
       - name: Run tests with coverage
         run: npm run test:coverage

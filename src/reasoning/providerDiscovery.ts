@@ -1,33 +1,45 @@
 // FILE: src/reasoning/providerDiscovery.ts
-import type { ReasoningProvider } from "../reasoning/types.js";
-import { openaiReasoningProvider } from "./openaiReasoningProvider.js";
-import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
+
+export type ProviderId = "openai" | "bedrock" | "mock";
 
 /**
- * Detects whether we can use Bedrock.
+ * Check OpenAI availability (Stage-3 env names)
  */
-function hasBedrockEnv(): boolean {
-  return Boolean(process.env.BEDROCK_MODEL_ID);
+function hasOpenAI(): boolean {
+  return typeof process.env.OE_OPENAI_API_KEY === "string" &&
+         process.env.OE_OPENAI_API_KEY.trim().length > 0;
 }
 
 /**
- * Detects if OpenAI is available.
+ * Check Bedrock availability (Stage-3 env names)
  */
-function hasOpenAIEnv(): boolean {
-  return typeof process.env.OPENAI_API_KEY === "string" &&
-         process.env.OPENAI_API_KEY.length > 0;
+function hasBedrock(): boolean {
+  return (
+    process.env.USE_BEDROCK === "true" &&
+    typeof process.env.OE_AWS_REGION === "string" &&
+    typeof process.env.OE_BEDROCK_MODEL === "string" &&
+    process.env.OE_AWS_REGION.trim().length > 0 &&
+    process.env.OE_BEDROCK_MODEL.trim().length > 0
+  );
 }
 
 /**
- * Select default provider based on env availability.
+ * Return ONLY a provider ID.
+ * ProviderFactory will instantiate the actual ReasoningProvider.
  */
-export function getDefaultProvider(): ReasoningProvider {
-  const openai = hasOpenAIEnv();
-  const bedrock = hasBedrockEnv();
+export function discoverProvider(): ProviderId {
+  const forced = process.env.OE_REASONING_MODE;
 
-  if (openai && bedrock) return openaiReasoningProvider;
-  if (openai) return openaiReasoningProvider;
-  if (bedrock) return bedrockReasoningProvider;
+  // Forced override first
+  if (forced === "openai") return "openai";
+  if (forced === "bedrock") return "bedrock";
+  if (forced === "mock") return "mock";
 
-  throw new Error("No reasoning provider available.");
+  const openai = hasOpenAI();
+  const bedrock = hasBedrock();
+
+  if (openai) return "openai";
+  if (bedrock) return "bedrock";
+
+  return "mock"; // safe fallback — CI-friendly
 }

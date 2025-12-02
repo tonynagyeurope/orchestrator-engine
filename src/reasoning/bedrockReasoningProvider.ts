@@ -1,115 +1,134 @@
 // FILE: src/reasoning/bedrockReasoningProvider.ts
-import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { ReasoningResult, TraceStep } from "./types.js";
-import { OrchestratorProfile } from "../config/baseConfig.js";
 
-/**
- * Amazon Bedrock reasoning provider.
- * Produces standardized ReasoningResult objects for the OE core.
- */
-export const bedrockReasoningProvider = {
-  id: "bedrock",
+import {
+  BedrockRuntimeClient,
+  InvokeModelCommand
+} from "@aws-sdk/client-bedrock-runtime";
 
-  async run(prompt: string, profile: OrchestratorProfile): Promise<ReasoningResult> {
-    const modelId = profile.model ?? process.env.BEDROCK_MODEL_ID;
-    const region = process.env.BEDROCK_REGION ?? "us-east-1";
+import type {
+  ReasoningProvider,
+  ReasoningResult,
+  TraceStep
+} from "./types.js";
 
-    // --- 1) Missing configuration → fallback reasoning -------------------------
-    if (!modelId) {
-      const trace: TraceStep[] = [
-        {
-          index: 0,
-          message: "Bedrock model missing → simulated reasoning provider used.",
-          timestamp: new Date().toISOString(),
-          meta: { provider: "bedrock", simulated: true }
-        }
-      ];
+export function bedrockReasoningProvider(): ReasoningProvider {
+  const client = new BedrockRuntimeClient({
+    region: process.env.OE_AWS_REGION ?? "us-east-1",
+    credentials: {
+      accessKeyId: process.env.OE_AWS_ACCESS_KEY_ID ?? "",
+      secretAccessKey: process.env.OE_AWS_SECRET_ACCESS_KEY ?? ""
+    }
+  });
+
+  const modelId = process.env.OE_BEDROCK_MODEL ?? "amazon.titan-text-lite-v1";
+
+  return {
+    id: "bedrock",
+
+    async run(prompt: string, profile): Promise<ReasoningResult> {
+      const trace: TraceStep[] = [];
+
+      // --- 1) ANALYZE STEP --------------------------------------
+      const analyzePrompt = buildAnalyzePrompt(prompt);
+      const analyzeText = await callBedrock(client, modelId, analyzePrompt);
+      trace.push(makeStep(0, "analyze", analyzeText));
+
+      // --- 2) SUMMARIZE STEP ------------------------------------
+      const summarizePrompt = buildSummarizePrompt(prompt);
+      const summarizeText = await callBedrock(client, modelId, summarizePrompt);
+      trace.push(makeStep(1, "summarize", summarizeText));
+
+      // --- 3) FINALIZE STEP --------------------------------------
+      const finalizePrompt = buildFinalizePrompt(prompt);
+      const finalText = await callBedrock(client, modelId, finalizePrompt);
+      trace.push(makeStep(2, "finalize", finalText));
 
       return {
-        final: `[mock-bedrock] No model configured. Profile="${profile.title}".`,
+        final: finalText,
         trace,
-        meta: { provider: "bedrock", profileId: profile.id, mock: true }
-      };
-    }
-
-    // --- 2) Create Bedrock client ------------------------------------------------
-    const client = new BedrockRuntimeClient({ region });
-
-    // Bedrock Claude-like / Titan-like models expect this structure
-    const bedrockPayload = {
-      inputText: profile.prompt.join("\n") + "\n\nUser Input:\n" + prompt,
-      textGenerationConfig: {
-        temperature: profile.temperature ?? 0.3,
-        maxTokenCount: 500
-      }
-    };
-
-    let rawResponse: string = "";
-    let finalText: string = "";
-
-    // --- 3) Invoke the model -----------------------------------------------------
-    try {
-      const command = new InvokeModelCommand({
-        modelId,
-        body: JSON.stringify(bedrockPayload),
-        contentType: "application/json",
-        accept: "application/json"
-      });
-
-      const response = await client.send(command);
-
-      rawResponse = Buffer.from(response.body).toString("utf8");
-
-      const parsed = JSON.parse(rawResponse);
-
-      // Titan / Claude / Llama-based models unify under outputText
-      finalText =
-        parsed.outputText ??
-        parsed.completions?.[0]?.data?.text ??
-        "[bedrock] No outputText returned by model.";
-
-    } catch (err) {
-      return {
-        final: `[bedrock:error] ${String(err)}`,
-        trace: [
-          {
-            index: 0,
-            message: "Bedrock API error occurred.",
-            timestamp: new Date().toISOString(),
-            meta: { provider: "bedrock", error: true, message: String(err) }
-          }
-        ],
         meta: {
           provider: "bedrock",
-          profileId: profile.id,
-          error: true
+          model: modelId
         }
       };
     }
+  };
+}
 
-    // --- 4) Build trace ----------------------------------------------------------
-    const trace: TraceStep[] = [
-      {
-        index: 0,
-        message: "Bedrock reasoning completed successfully.",
-        timestamp: new Date().toISOString(),
-        meta: {
-          provider: "bedrock",
-          modelId,
-          profileId: profile.id
-        }
-      }
-    ];
+/** ----------------------- HELPERS ----------------------------- */
 
-    // --- 5) Return standardized ReasoningResult ---------------------------------
-    return {
-      final: finalText,
-      trace,
-      meta: {
-        provider: "bedrock",
-        modelId,
-        profileId: profile.id
-      }
-    };
-  }
-};
+async function callBedrock(
+  client: BedrockRuntimeClient,
+  modelId: string,
+  prompt: string
+): Promise<string> {
+  const payload = {
+    inputText: prompt,
+    textGenerationConfig: {
+      temperature: 0.2,
+      maxTokenCount: 400,
+      topP: 0.9
+    }
+  };
+
+  const command = new InvokeModelCommand({
+    modelId,
+    contentType: "application/json",
+    accept: "application/json",
+    body: JSON.stringify(payload)
+  });
+
+  const res = await client.send(command);
+
+  const jsonString = new TextDecoder().decode(res.body);
+  const json = JSON.parse(jsonString);
+
+  return (
+    json?.results?.[0]?.outputText ??
+    "[bedrock] Empty response"
+  );
+}
+
+function buildAnalyzePrompt(input: string): string {
+  return `
+Explain briefly (1-2 sentences) what the user wants to achieve.
+User input:
+"${input}"
+  `.trim();
+}
+
+function buildSummarizePrompt(input: string): string {
+  return `
+Summarize the required CLI command or action in a concise technical form.
+User input:
+"${input}"
+  `.trim();
+}
+
+function buildFinalizePrompt(input: string): string {
+  return `
+Convert the user's request into the exact AWS CLI command.
+
+Rules:
+- Produce ONLY the command.
+- Do not add explanations.
+- Use correct AWS CLI syntax.
+
+User input:
+"${input}"
+  `.trim();
+}
+
+function makeStep(
+  index: number,
+  event: string,
+  message: string
+): TraceStep {
+  return {
+    index,
+    event,
+    message,
+    timestamp: new Date().toISOString(),
+    source: "provider"
+  };
+}
