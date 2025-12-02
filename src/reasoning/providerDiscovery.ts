@@ -1,13 +1,15 @@
 // FILE: src/reasoning/providerDiscovery.ts
 
-export type ProviderId = "openai" | "bedrock" | "mock";
+export type ProviderId = "openai" | "bedrock";
 
 /**
  * Check OpenAI availability (Stage-3 env names)
  */
 function hasOpenAI(): boolean {
-  return typeof process.env.OE_OPENAI_API_KEY === "string" &&
-         process.env.OE_OPENAI_API_KEY.trim().length > 0;
+  return (
+    typeof process.env.OE_OPENAI_API_KEY === "string" &&
+    process.env.OE_OPENAI_API_KEY.trim().length > 0
+  );
 }
 
 /**
@@ -15,7 +17,7 @@ function hasOpenAI(): boolean {
  */
 function hasBedrock(): boolean {
   return (
-    process.env.USE_BEDROCK === "true" &&
+    process.env.USE_BEDROCK?.toLowerCase() === "true" &&
     typeof process.env.OE_AWS_REGION === "string" &&
     typeof process.env.OE_BEDROCK_MODEL === "string" &&
     process.env.OE_AWS_REGION.trim().length > 0 &&
@@ -24,8 +26,8 @@ function hasBedrock(): boolean {
 }
 
 /**
- * Return ONLY a provider ID.
- * ProviderFactory will instantiate the actual ReasoningProvider.
+ * Return provider ID only.
+ * (ProviderFactory will instantiate actual provider.)
  */
 export function discoverProvider(): ProviderId {
   const forced = process.env.OE_REASONING_MODE;
@@ -33,13 +35,14 @@ export function discoverProvider(): ProviderId {
   // Forced override first
   if (forced === "openai") return "openai";
   if (forced === "bedrock") return "bedrock";
-  if (forced === "mock") return "mock";
 
-  const openai = hasOpenAI();
-  const bedrock = hasBedrock();
+  const openaiAvailable = hasOpenAI();
+  const bedrockAvailable = hasBedrock();
 
-  if (openai) return "openai";
-  if (bedrock) return "bedrock";
+  // Priority: OpenAI → Bedrock
+  if (openaiAvailable) return "openai";
+  if (bedrockAvailable) return "bedrock";
 
-  return "mock"; // safe fallback — CI-friendly
+  // Final safe fallback (CI-safe)
+  return "openai";
 }

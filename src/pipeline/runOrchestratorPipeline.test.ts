@@ -1,29 +1,34 @@
 // FILE: src/pipeline/runOrchestratorPipeline.test.ts
+
 import { describe, it, expect } from "vitest";
 import { runOrchestratorPipeline } from "./runOrchestratorPipeline.js";
-import { loadProfile } from "../config/profileLoader.js";
-import type { OrchestratorProfileValidated } from "../config/profileSchema.js";
 
-describe("runOrchestratorPipeline (single pipeline smoke test)", () => {
-  it("should return ok, provider, domain, input, and summary", async () => {
-    // Load a real orchestrator profile
-    const profile = await loadProfile("default") as OrchestratorProfileValidated;
+describe("runOrchestratorPipeline (Stage-3 smoke test)", () => {
+  it("should run a single pipeline and return final, trace, summary", async () => {
+    const result = await runOrchestratorPipeline({
+      provider: "test",   // mock no longer exists in Stage-3
+      input: "hello world",
+      profileId: "default"
+    });
 
-    // Call the pipeline according to the *actual* signature:
-    // runOrchestratorPipeline(input, profile)
-    const result = await runOrchestratorPipeline(
-      "hello world",
-      profile
-    );
+    // provider
+    expect(result.provider).toBe("test");
+    expect(result.profile).toBe("default");
 
-    // Basic shape validation
-    expect(result.ok).toBe(true);
-    expect(result.provider).toBe(profile.title);
-    expect(result.domain).toBe(profile.id);
-    expect(result.input).toBe("hello world");
+    // final
+    expect(typeof result.final).toBe("string");
 
-    // summary is produced by analyzeDomain(...)
-    expect(result.summary).toBeDefined();
+    // trace
+    expect(Array.isArray(result.trace)).toBe(true);
+    expect(result.trace.length).toBeGreaterThan(0);
+    expect(typeof result.trace[0].message).toBe("string");
+
+    // summary
     expect(typeof result.summary).toBe("string");
+    expect(result.summary.length).toBeGreaterThan(0);
+
+    // steps
+    expect(Array.isArray(result.steps)).toBe(true);
+    expect(result.steps.length).toBe(result.trace.length);
   });
 });

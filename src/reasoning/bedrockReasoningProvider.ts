@@ -13,11 +13,8 @@ import type {
 
 export function bedrockReasoningProvider(): ReasoningProvider {
   const client = new BedrockRuntimeClient({
-    region: process.env.OE_AWS_REGION ?? "us-east-1",
-    credentials: {
-      accessKeyId: process.env.OE_AWS_ACCESS_KEY_ID ?? "",
-      secretAccessKey: process.env.OE_AWS_SECRET_ACCESS_KEY ?? ""
-    }
+    region: process.env.OE_AWS_REGION ?? "us-east-1"
+    // No credentials — Lambda uses IAM execution role automatically
   });
 
   const modelId = process.env.OE_BEDROCK_MODEL ?? "amazon.titan-text-lite-v1";
@@ -25,7 +22,7 @@ export function bedrockReasoningProvider(): ReasoningProvider {
   return {
     id: "bedrock",
 
-    async run(prompt: string, profile): Promise<ReasoningResult> {
+    async run(prompt: string): Promise<ReasoningResult> {
       const trace: TraceStep[] = [];
 
       // --- 1) ANALYZE STEP --------------------------------------

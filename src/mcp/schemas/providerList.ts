@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * A simple provider list (string IDs).
- * Example: ["openai", "bedrock", "mock"]
+ * Example: ["openai", "bedrock", "test"]
  */
 export const ProviderListResponseSchema = z.object({
   ok: z.literal(true),
