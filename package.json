@@ -1,6 +1,6 @@
 {
   "name": "orchestrator-engine",
-  "version": "1.0.11",
+  "version": "1.0.21",
   "description": "A modular, config-driven Orchestrator Engine for multi-provider AI orchestration and reasoning.",
   "keywords": [
     "orchestrator",

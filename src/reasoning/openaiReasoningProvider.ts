@@ -10,7 +10,7 @@ export function openaiReasoningProvider(apiKey: string): ReasoningProvider {
   return {
     id: "openai",
 
-    async run(prompt: string, profile) {
+    async run(prompt: string) {
       const trace: TraceStep[] = [];
 
       // --- 1) ANALYZE STEP ------------------------------

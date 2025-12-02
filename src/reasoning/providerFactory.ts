@@ -2,7 +2,9 @@
 
 import type { ReasoningProvider } from "./types.js";
 import { openaiReasoningProvider } from "./openaiReasoningProvider.js";
-import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
+// import { bedrockReasoningProvider } from "./bedrockReasoningProvider.js";
+import { testReasoningProvider } from "./testReasoningProvider.js";
+import { bedrockFastProvider } from "./bedrockFastProvider.js";
 
 export function getProvider(providerName: string): ReasoningProvider {
   switch (providerName) {
@@ -12,13 +14,27 @@ export function getProvider(providerName: string): ReasoningProvider {
       return openaiReasoningProvider(key);
     }
 
+/* -- Removed due to throttling
+
     case "bedrock": {
-      if (!process.env.OE_AWS_ACCESS_KEY_ID ||
-          !process.env.OE_AWS_SECRET_ACCESS_KEY) {
-        throw new Error("[OE] Missing AWS credentials for Bedrock provider");
+      // In Lambda we rely on the execution role, NOT env credentials.
+      // The provider must only ensure region + model are set.
+      if (!process.env.OE_AWS_REGION || !process.env.OE_BEDROCK_MODEL) {
+        throw new Error("[OE] Missing required Bedrock config (region/model)");
       }
       return bedrockReasoningProvider();
     }
+*/
+
+    case "bedrock": {
+      if (!process.env.OE_AWS_REGION || !process.env.OE_BEDROCK_MODEL) {
+        throw new Error("[OE] Missing required Bedrock config");
+      }
+      return bedrockFastProvider();
+    }
+    
+    case "test":
+      return testReasoningProvider();
 
     default:
       throw new Error(`[OE] Unknown provider: ${providerName}`);
@@ -26,5 +42,5 @@ export function getProvider(providerName: string): ReasoningProvider {
 }
 
 export function getAvailableProviders(): string[] {
-  return ["openai", "bedrock"];
+  return ["openai", "bedrock", "test"];
 }
